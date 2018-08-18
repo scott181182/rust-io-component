@@ -6,6 +6,4 @@ authors = ["Scott Fasone <scott181182@yahoo.com>"]
 [dependencies]
 node-lib = { git = "https://github.com/knowlom/node-lib.git" }
 i2cdev_lib = { git = "https://github.com/knowlom/rust-i2c-devices" }
-
-serde = "1.0.71"
-serde_derive = "1.0.71"
+messages = { git = "https://github.com/mwaverecycling/mwave_packages" }

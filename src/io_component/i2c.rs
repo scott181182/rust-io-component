@@ -1,8 +1,8 @@
 use error::Error;
-use msg;
 
 use std::sync::{ Arc, Mutex, MutexGuard, LockResult };
 
+use messages::msgs;
 use node_lib::node::Node;
 
 
@@ -38,7 +38,7 @@ impl I2CBridge
     }
     pub fn configure(&mut self) -> Result<(), Error>
     {
-        let devices: Vec<msg::I2CDevice> = self.node.call_service(I2CCONFIG_SERVICE.to_owned(), &self.node.get_name().to_owned())
+        let devices: Vec<msgs::I2CDevice> = self.node.call_service(I2CCONFIG_SERVICE.to_owned(), &self.node.get_name().to_owned())
             .map_err(Error::from)?;
 
         for device in devices
@@ -87,15 +87,14 @@ impl <T> Clone for I2Cell<T>
 mod pca9555
 {
     use super::{ I2Cell, I2CDeviceType };
-    use util::vecs2map;
     use error::Error;
-    use msg;
 
     use std::sync::{ Arc };
     use std::sync::atomic::{ AtomicBool, Ordering };
     use std::thread;
 
     use i2cdev_lib::pca9555::PCA9555;
+    use messages::msgs;
     use node_lib::node::{ Node, Publisher, MultiSubscriber };
 
     pub struct Bridge
@@ -108,14 +107,12 @@ mod pca9555
     }
     impl Bridge
     {
-        pub fn new(interface: I2CDeviceType, config: msg::I2CDevice) -> Self
+        pub fn new(interface: I2CDeviceType, config: msgs::I2CDevice) -> Self
         {
-            let options = vecs2map(config.option_keys, config.option_values);
-
-            let config_mask: u16 = if options.contains_key("mode") {
-                if options["mode"] == "output" { 0x0000 } else { 0xffff }
+            let config_mask: u16 = if config.options.contains_key("mode") {
+                if config.options["mode"] == "output" { 0x0000 } else { 0xffff }
             } else {
-                u16::from_str_radix(&options["mask"], 16)
+                u16::from_str_radix(&config.options["mask"], 16)
                     .map_err(|e| eprintln!("Error parsing config_mask for PCA9555:\n{:?}", e))
                     .unwrap_or(0)
             };
