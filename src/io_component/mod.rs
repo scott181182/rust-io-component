@@ -21,7 +21,7 @@ impl IoComponent
     pub fn start(&mut self)
     {
         if let Err(e) = self.i2c_bridge.configure() {
-            eprintln!("Error configuring I2C Bridge:\n{:?}", e)
+            error!("Error configuring I2C Bridge:\n{:?}", e)
         }
     }
 }

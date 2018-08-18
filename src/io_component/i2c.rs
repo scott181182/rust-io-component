@@ -113,7 +113,7 @@ mod pca9555
                 if config.options["mode"] == "output" { 0x0000 } else { 0xffff }
             } else {
                 u16::from_str_radix(&config.options["mask"], 16)
-                    .map_err(|e| eprintln!("Error parsing config_mask for PCA9555:\n{:?}", e))
+                    .map_err(|e| error!("Error parsing config_mask for PCA9555:\n{:?}", e))
                     .unwrap_or(0)
             };
 
@@ -168,7 +168,7 @@ mod pca9555
                         .find(|(_, topic)| topic == &message.topic)
                     {
                         let _ = device.lock().unwrap().write_output_pin(*pin as u8, message.payload)
-                            .map_err(|e| eprintln!("Error writing to PCA9555;\n{:?}", e));
+                            .map_err(|e| error!("Error writing to PCA9555;\n{:?}", e));
                     }
 
                 }
@@ -191,7 +191,7 @@ mod pca9555
                     let result = match device.lock().unwrap().read_input() {
                         Ok(r) => r,
                         Err(e) => {
-                            eprintln!("Error polling PCA9555:\n{:?}", e);
+                            error!("Error polling PCA9555:\n{:?}", e);
                             continue;
                         }
                     };
