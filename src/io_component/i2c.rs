@@ -22,7 +22,7 @@ type I2CDeviceType = LinuxI2CDevice;
 
 
 
-const I2CCONFIG_SERVICE: &str = "FetchI2CConfig";
+const I2CCONFIG_SERVICE: &str = "FetchIoConfig";
 
 pub struct I2CBridge
 {
@@ -44,8 +44,8 @@ impl I2CBridge
         for device in devices
         {
             #[cfg(target_os = "linux")]
-            let interface = LinuxI2CDevice::new(device.bus, device.address as u16)
-                .map_err(Error::from)?;
+            let interface = LinuxI2CDevice::new(format!("/dev/i2c-{}", device.bus), device.address as u16)
+                .map_err(Error::from_i2c)?;
             #[cfg(not(target_os = "linux"))]
             let interface = MockI2CDevice::new();
 
