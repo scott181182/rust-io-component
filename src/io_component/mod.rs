@@ -1,8 +1,11 @@
 pub mod i2c;
 
+use error::Error;
+
 use node_lib::node::Node;
 
 use std::sync::Arc;
+use std::thread::JoinHandle;
 
 
 
@@ -18,10 +21,8 @@ impl IoComponent
         IoComponent{ i2c_bridge: i2c::I2CBridge::new(node) }
     }
 
-    pub fn start(&mut self)
+    pub fn start(&mut self) -> Result<Vec<JoinHandle<()>>, Error>
     {
-        if let Err(e) = self.i2c_bridge.configure() {
-            error!("Error configuring I2C Bridge:\n{:?}", e)
-        }
+        self.i2c_bridge.configure()
     }
 }

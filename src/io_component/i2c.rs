@@ -1,6 +1,7 @@
 use error::Error;
 
 use std::sync::{ Arc, Mutex, MutexGuard, LockResult };
+use std::thread::JoinHandle;
 
 use messages::msgs;
 use node_lib::node::Node;
@@ -36,13 +37,16 @@ impl I2CBridge
     {
         I2CBridge{ node, pca9555_vec: vec![  ] }
     }
-    pub fn configure(&mut self) -> Result<(), Error>
+    pub fn configure(&mut self) -> Result<Vec<JoinHandle<()>>, Error>
     {
         let devices: Vec<msgs::I2CDevice> = self.node.call_service(I2CCONFIG_SERVICE.to_owned(), &self.node.get_name().to_owned())
             .map_err(Error::from)?;
+        let mut ret = Vec::new();
 
+        trace!("Found {} devices", devices.len());
         for device in devices
         {
+
             #[cfg(target_os = "linux")]
             let interface = LinuxI2CDevice::new(format!("/dev/i2c-{}", device.bus), device.address as u16)
                 .map_err(Error::from_i2c)?;
@@ -50,13 +54,14 @@ impl I2CBridge
             let interface = MockI2CDevice::new();
 
             if device.device == "pca9555" {
+                trace!("Initializing {} at address {}", &device.device, &device.address);
                 let mut bridge = pca9555::Bridge::new(interface, device);
-                bridge.init(&self.node)?;
+                ret.append(&mut bridge.init(&self.node)?);
                 self.pca9555_vec.push(bridge);
             }
         }
 
-        Ok(())
+        Ok(ret)
     }
 }
 
@@ -126,7 +131,7 @@ mod pca9555
             }
         }
 
-        pub fn init(&mut self, node: &Node) -> Result<(), Error>
+        pub fn init(&mut self, node: &Node) -> Result<Vec<thread::JoinHandle<()>>, Error>
         {
             {
                 let mut lock = self.device.lock().unwrap();
@@ -138,23 +143,24 @@ mod pca9555
                 .filter(|(_, topic)| !topic.is_empty())
                 .partition(|(pin, _)| self.config_mask & (1u16 << pin) == 0);
 
+            let mut ret = Vec::with_capacity(2);
             if !outputs.is_empty()
             {
                 let output_topics = outputs.iter()
                     .map(|(_, topic)| topic)
                     .cloned().collect();
                 let sub = node.create_multisubscriber::<bool>(output_topics)?;
-                self.spawn_listener(outputs, sub);
+                ret.push(self.spawn_listener(outputs, sub));
             }
             if !inputs.is_empty()
             {
                 let pubs = inputs.into_iter()
                     .map(|(index, topic)| (index, node.create_publisher(topic)))
                     .collect();
-                self.spawn_poller(pubs);
+                ret.push(self.spawn_poller(pubs));
             }
 
-            Ok(())
+            Ok(ret)
         }
 
         pub fn spawn_listener(&self, topics: Vec<(usize, String)>, sub: MultiSubscriber<bool>) -> thread::JoinHandle<()>

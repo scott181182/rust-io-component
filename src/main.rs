@@ -24,5 +24,15 @@ fn main()
 
     let mut io = IoComponent::new("RelayComponent".to_owned());
     info!("Starting I/O Component...");
-    io.start();
+    let handles = match io.start() {
+        Ok(v) => v,
+        Err(e) => {
+            return error!("Error starting I/O Component:\n{:?}", e);
+        }
+    };
+
+    handles.into_iter().for_each(|h| match h.join() {
+        Ok(()) => (),
+        Err(e) => error!("Error in I/O thread:\n{:?}", e)
+    });
 }
