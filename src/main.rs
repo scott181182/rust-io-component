@@ -19,10 +19,10 @@ fn main()
         .default_format()
         .default_format_module_path(false)
         .default_format_timestamp(false)
-        .filter_level(LevelFilter::Info)
+        .filter_level(LevelFilter::Trace)
         .init();
 
-    let mut io = IoComponent::new("RelayComponent".to_owned());
+    let mut io = IoComponent::new("testi2c".to_owned());
     info!("Starting I/O Component...");
     let handles = match io.start() {
         Ok(v) => v,
